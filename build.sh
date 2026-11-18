@@ -1,0 +1,19 @@
+#!/bin/bash
+# Usage: ./build.sh [run]   (set SIGN_ID to sign with your own certificate)
+set -euo pipefail
+cd "$(dirname "$0")"
+
+swift build -c release
+
+APP=build/Pane.app
+rm -rf "$APP"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp .build/release/Pane "$APP/Contents/MacOS/Pane"
+cp Resources/Info.plist "$APP/Contents/Info.plist"
+codesign --force --sign "${SIGN_ID:--}" "$APP"
+echo "Built $APP"
+
+if [[ "${1:-}" == "run" ]]; then
+    pkill -x Pane || true
+    open "$APP"
+fi
