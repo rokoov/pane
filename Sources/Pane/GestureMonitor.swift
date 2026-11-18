@@ -60,10 +60,10 @@ final class GestureMonitor {
         // A lost ended event must not leave a stale swipe swallowing normal scrolling
         reset()
         let point = event.location
-        guard let win = WindowManager.window(at: point) else { return Unmanaged.passUnretained(event) }
-
         let anywhere = Settings.anywhereWithOption && ns.modifierFlags.contains(.option)
-        guard anywhere || point.y - win.frame.minY <= Settings.titleBarHeight else { return Unmanaged.passUnretained(event) }
+        guard let bounds = WindowManager.bounds(at: point),
+              anywhere || point.y - bounds.minY <= Settings.titleBarHeight,
+              let win = WindowManager.window(at: point, in: bounds) else { return Unmanaged.passUnretained(event) }
 
         window = win
         screen = Screens.screen(containing: Screens.flip(point))

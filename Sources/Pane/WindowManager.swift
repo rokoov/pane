@@ -13,9 +13,21 @@ enum WindowManager {
         return el
     }()
 
-    static func window(at point: CGPoint) -> TargetWindow? {
+    // Topmost window under the cursor, straight from the window server, so plain scrolling never waits on the app
+    static func bounds(at point: CGPoint) -> CGRect? {
+        let number = NSWindow.windowNumber(at: Screens.flip(point), belowWindowWithWindowNumber: 0)
+        guard number > 0,
+              let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, CGWindowID(number)) as? [[String: Any]])?.first,
+              info[kCGWindowLayer as String] as? Int == 0,
+              let bounds = info[kCGWindowBounds as String] as? NSDictionary else { return nil }
+        return CGRect(dictionaryRepresentation: bounds as CFDictionary)
+    }
+
+    static func window(at point: CGPoint, in bounds: CGRect) -> TargetWindow? {
+        // Hit-test the title bar rather than the content, so web views don't build their accessibility tree
+        let probe = CGPoint(x: point.x, y: min(point.y, bounds.minY + 10))
         var hit: AXUIElement?
-        guard AXUIElementCopyElementAtPosition(systemWide, Float(point.x), Float(point.y), &hit) == .success,
+        guard AXUIElementCopyElementAtPosition(systemWide, Float(probe.x), Float(probe.y), &hit) == .success,
               let hit, let win = windowElement(from: hit) else { return nil }
 
         var pid: pid_t = 0
@@ -23,7 +35,7 @@ enum WindowManager {
         guard pid != getpid(),
               string(win, kAXSubroleAttribute) == kAXStandardWindowSubrole,
               bool(win, "AXFullScreen") != true,
-              let frame = frame(of: win) else { return nil }
+              let frame = frame(of: win), frame.contains(point) else { return nil }
         return TargetWindow(element: win, frame: frame)
     }
 
