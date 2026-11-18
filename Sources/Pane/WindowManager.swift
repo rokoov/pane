@@ -57,10 +57,19 @@ enum WindowManager {
             var origin = r.origin, size = r.size
             guard let p = AXValueCreate(.cgPoint, &origin), let s = AXValueCreate(.cgSize, &size) else { return }
             withoutEnhancedUI(win) {
-                // Position, size, position again so windows clamped by the old size still land right
-                AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
-                AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, s)
-                AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
+                // Size, move, size again: macOS clamps a resize that runs past the Dock or screen edge, never a move
+                let apply: () -> Void = {
+                    AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, s)
+                    AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
+                    AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, s)
+                }
+                apply()
+                // Right after changing screens the app still clamps to the old one, so give it a moment
+                for _ in 0..<3 {
+                    guard let now = frame(of: win), !now.isClose(to: r) else { break }
+                    usleep(50_000)
+                    apply()
+                }
             }
         }
     }
