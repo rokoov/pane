@@ -1,5 +1,8 @@
 import AppKit
 import ApplicationServices
+import os
+
+private let log = Logger(subsystem: "com.rokoov.pane", category: "window")
 
 struct TargetWindow {
     let element: AXUIElement
@@ -27,15 +30,22 @@ enum WindowManager {
         // Hit-test the title bar rather than the content, so web views don't build their accessibility tree
         let probe = CGPoint(x: point.x, y: min(point.y, bounds.minY + 10))
         var hit: AXUIElement?
-        guard AXUIElementCopyElementAtPosition(systemWide, Float(probe.x), Float(probe.y), &hit) == .success,
-              let hit, let win = windowElement(from: hit) else { return nil }
+        let error = AXUIElementCopyElementAtPosition(systemWide, Float(probe.x), Float(probe.y), &hit)
+        guard error == .success, let hit, let win = windowElement(from: hit) else {
+            log.debug("no window at title bar, AX error \(error.rawValue)")
+            return nil
+        }
 
         var pid: pid_t = 0
         AXUIElementGetPid(win, &pid)
+        let subrole = string(win, kAXSubroleAttribute)
         guard pid != getpid(),
-              string(win, kAXSubroleAttribute) == kAXStandardWindowSubrole,
+              subrole == kAXStandardWindowSubrole,
               bool(win, "AXFullScreen") != true,
-              let frame = frame(of: win), frame.contains(point) else { return nil }
+              let frame = frame(of: win), frame.contains(point) else {
+            log.debug("skipped window of pid \(pid), subrole \(subrole ?? "none", privacy: .public)")
+            return nil
+        }
         return TargetWindow(element: win, frame: frame)
     }
 

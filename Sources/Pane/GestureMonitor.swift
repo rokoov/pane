@@ -1,4 +1,7 @@
 import AppKit
+import os
+
+private let log = Logger(subsystem: "com.rokoov.pane", category: "gesture")
 
 final class GestureMonitor {
     private var tap: CFMachPort?
@@ -107,6 +110,8 @@ final class GestureMonitor {
     }
 
     private func finish(commit: Bool) {
+        let target = resolved.map { "\($0.layout)" } ?? "none"
+        log.debug("swipe dx \(Double(self.dx)) dy \(Double(self.dy)) to \(target, privacy: .public) commit \(commit)")
         if commit, let window, let resolved {
             if resolved.layout == .minimize {
                 WindowManager.minimize(window.element)
