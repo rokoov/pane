@@ -39,19 +39,24 @@ enum WindowManager {
         return TargetWindow(element: win, frame: frame)
     }
 
+    // Slow apps take a while to move, which must not stall the event tap or the overlay animation
+    private static let queue = DispatchQueue(label: "com.rokoov.pane.windows", qos: .userInteractive)
+
     static func setFrame(_ win: AXUIElement, _ r: CGRect) {
-        var origin = r.origin, size = r.size
-        guard let p = AXValueCreate(.cgPoint, &origin), let s = AXValueCreate(.cgSize, &size) else { return }
-        withoutEnhancedUI(win) {
-            // Position, size, position again so windows clamped by the old size still land right
-            AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
-            AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, s)
-            AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
+        queue.async {
+            var origin = r.origin, size = r.size
+            guard let p = AXValueCreate(.cgPoint, &origin), let s = AXValueCreate(.cgSize, &size) else { return }
+            withoutEnhancedUI(win) {
+                // Position, size, position again so windows clamped by the old size still land right
+                AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
+                AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, s)
+                AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, p)
+            }
         }
     }
 
     static func minimize(_ win: AXUIElement) {
-        AXUIElementSetAttributeValue(win, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
+        queue.async { AXUIElementSetAttributeValue(win, kAXMinimizedAttribute as CFString, kCFBooleanTrue) }
     }
 
     private static func windowElement(from el: AXUIElement) -> AXUIElement? {
