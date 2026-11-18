@@ -1,32 +1,39 @@
 import AppKit
 
+// Accessibility coordinates start at the top left of the main screen, Cocoa ones at its bottom left
 enum Screens {
-    static var primaryHeight: CGFloat { NSScreen.screens.first?.frame.height ?? 0 }
+    private static var mainScreenHeight: CGFloat { NSScreen.screens.first?.frame.height ?? 0 }
 
-    // Flips between AX (top-left origin) and Cocoa (bottom-left origin), works both ways
-    static func flip(_ r: CGRect) -> CGRect {
-        CGRect(x: r.minX, y: primaryHeight - r.maxY, width: r.width, height: r.height)
+    // Converts either way, since flipping twice gives back the original
+    static func flip(_ rect: CGRect) -> CGRect {
+        CGRect(x: rect.minX, y: mainScreenHeight - rect.maxY, width: rect.width, height: rect.height)
     }
 
-    static func flip(_ p: CGPoint) -> CGPoint {
-        CGPoint(x: p.x, y: primaryHeight - p.y)
+    static func flip(_ point: CGPoint) -> CGPoint {
+        CGPoint(x: point.x, y: mainScreenHeight - point.y)
     }
 
-    static func screen(containing p: CGPoint) -> NSScreen? {
-        NSScreen.screens.first { NSMouseInRect(p, $0.frame, false) } ?? NSScreen.main
+    static func screen(containing point: CGPoint) -> NSScreen? {
+        NSScreen.screens.first { NSMouseInRect(point, $0.frame, false) } ?? NSScreen.main
     }
 
-    static func neighbor(of s: NSScreen, left: Bool) -> NSScreen? {
-        let distance = { (o: NSScreen) in abs(o.frame.midX - s.frame.midX) + abs(o.frame.midY - s.frame.midY) }
+    // Nearest screen that lies entirely to one side, allowing a point of overlap at the shared edge
+    static func neighbor(of screen: NSScreen, toTheLeft: Bool) -> NSScreen? {
+        let distance = { (other: NSScreen) in
+            abs(other.frame.midX - screen.frame.midX) + abs(other.frame.midY - screen.frame.midY)
+        }
         return NSScreen.screens
-            .filter { $0 != s && (left ? $0.frame.maxX <= s.frame.minX + 1 : $0.frame.minX >= s.frame.maxX - 1) }
+            .filter { other in
+                guard other != screen else { return false }
+                return toTheLeft ? other.frame.maxX <= screen.frame.minX + 1 : other.frame.minX >= screen.frame.maxX - 1
+            }
             .min { distance($0) < distance($1) }
     }
 }
 
 extension CGRect {
-    func isClose(to o: CGRect, tolerance: CGFloat = 10) -> Bool {
-        abs(minX - o.minX) < tolerance && abs(minY - o.minY) < tolerance
-            && abs(width - o.width) < tolerance && abs(height - o.height) < tolerance
+    func isClose(to other: CGRect, tolerance: CGFloat = Config.Windows.frameTolerance) -> Bool {
+        abs(minX - other.minX) < tolerance && abs(minY - other.minY) < tolerance
+            && abs(width - other.width) < tolerance && abs(height - other.height) < tolerance
     }
 }

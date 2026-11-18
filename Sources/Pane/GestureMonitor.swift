@@ -1,33 +1,41 @@
 import AppKit
 import os
 
-private let log = Logger(subsystem: "com.rokoov.pane", category: "gesture")
-
+// Turns two-finger swipes on the active window's title bar into snaps and leaves every other scroll alone
 final class GestureMonitor {
-    private var tap: CFMachPort?
-    private let overlay = SnapOverlay()
+    private struct Snap {
+        let layout: Layout
+        let frame: CGRect
+    }
 
-    private var window: TargetWindow?
+    private let overlay = SnapOverlay()
+    private var tap: CFMachPort?
+
+    private var target: TargetWindow?
     private var screen: NSScreen?
-    private var dx: CGFloat = 0
-    private var dy: CGFloat = 0
+    private var travel = CGVector.zero
     private var layout: Layout?
-    private var resolved: (layout: Layout, frame: CGRect)?
-    private var swallowMomentum = false
+    private var snap: Snap?
+    private var swallowsMomentum = false
 
     var isRunning: Bool { tap != nil }
 
     @discardableResult
     func start() -> Bool {
         guard tap == nil else { return true }
-        let mask = CGEventMask(1 << CGEventType.scrollWheel.rawValue)
-        let callback: CGEventTapCallBack = { _, type, event, refcon in
-            guard let refcon else { return Unmanaged.passUnretained(event) }
-            return Unmanaged<GestureMonitor>.fromOpaque(refcon).takeUnretainedValue().handle(type, event)
+        let callback: CGEventTapCallBack = { _, type, event, monitor in
+            guard let monitor else { return Unmanaged.passUnretained(event) }
+            return Unmanaged<GestureMonitor>.fromOpaque(monitor).takeUnretainedValue().handle(type, event)
         }
-        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
-                                          eventsOfInterest: mask, callback: callback,
-                                          userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return false }
+        let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: CGEventMask(1 << CGEventType.scrollWheel.rawValue),
+            callback: callback,
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        )
+        guard let tap else { return false }
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
@@ -35,111 +43,115 @@ final class GestureMonitor {
         return true
     }
 
-    private func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
+    private func handle(_ type: CGEventType, _ cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        let pass = Unmanaged.passUnretained(cgEvent)
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
-            return Unmanaged.passUnretained(event)
+            return pass
         }
-        guard Settings.enabled, let ns = NSEvent(cgEvent: event) else { return Unmanaged.passUnretained(event) }
+        guard Settings.isEnabled, let event = NSEvent(cgEvent: cgEvent) else { return pass }
 
-        if !ns.momentumPhase.isEmpty {
-            return swallowMomentum ? nil : Unmanaged.passUnretained(event)
+        if !event.momentumPhase.isEmpty {
+            return swallowsMomentum ? nil : pass
         }
-        switch ns.phase {
+        switch event.phase {
         case .began:
-            return begin(ns, event)
-        case .changed where window != nil:
-            update(ns)
+            return begin(event, at: cgEvent.location) ? nil : pass
+        case .changed where target != nil:
+            update(event)
             return nil
-        case .ended where window != nil, .cancelled where window != nil:
-            finish(commit: ns.phase == .ended)
+        case .ended where target != nil, .cancelled where target != nil:
+            finish(commit: event.phase == .ended)
             return nil
         default:
-            return Unmanaged.passUnretained(event)
+            return pass
         }
     }
 
-    private func begin(_ ns: NSEvent, _ event: CGEvent) -> Unmanaged<CGEvent>? {
+    // Starts tracking when the swipe is meant for the active window; false lets the scroll through
+    private func begin(_ event: NSEvent, at point: CGPoint) -> Bool {
         // A lost ended event must not leave a stale swipe swallowing normal scrolling
         reset()
-        let anywhere = Settings.anywhereWithOption && ns.modifierFlags.contains(.option)
-        guard let win = target(at: event.location, anywhere: anywhere) else { return Unmanaged.passUnretained(event) }
+        let anywhere = Settings.allowsSwipeAnywhere && event.modifierFlags.contains(.option)
+        guard let window = activeWindow(at: point, anywhere: anywhere) else { return false }
 
-        window = win
-        let frame = Screens.flip(win.frame)
+        let frame = Screens.flip(window.frame)
+        target = window
         screen = Screens.screen(containing: CGPoint(x: frame.midX, y: frame.midY))
-        dx = 0
-        dy = 0
-        update(ns)
-        return nil
+        travel = .zero
+        update(event)
+        return true
     }
 
     // The active window, when the swipe is on its own title bar or anywhere while holding ⌥
-    private func target(at point: CGPoint, anywhere: Bool) -> TargetWindow? {
+    private func activeWindow(at point: CGPoint, anywhere: Bool) -> TargetWindow? {
         if anywhere { return WindowManager.activeWindow() }
         // Plain scrolls are ruled out through the window server alone, before any app is asked
         guard let under = WindowManager.windowUnder(point),
-              point.y - under.bounds.minY <= Settings.titleBarHeight,
-              let win = WindowManager.activeWindow() else { return nil }
-        guard win.pid == under.pid, win.frame.isClose(to: under.bounds) else {
-            log.debug("title bar of an inactive window")
+            point.y - under.bounds.minY <= Config.Gesture.titleBarHeight,
+            let window = WindowManager.activeWindow()
+        else { return nil }
+        guard window.pid == under.pid, window.frame.isClose(to: under.bounds) else {
+            Logger.gesture.debug("title bar of an inactive window")
             return nil
         }
-        return win
+        return window
     }
 
-    private func update(_ ns: NSEvent) {
-        // Normalize to finger movement regardless of natural scrolling
-        let inverted = ns.isDirectionInvertedFromDevice
-        dx += inverted ? ns.scrollingDeltaX : -ns.scrollingDeltaX
-        dy += inverted ? -ns.scrollingDeltaY : ns.scrollingDeltaY
+    private func update(_ event: NSEvent) {
+        // Finger travel, the same with natural scrolling on or off
+        let inverted = event.isDirectionInvertedFromDevice
+        travel.dx += inverted ? event.scrollingDeltaX : -event.scrollingDeltaX
+        travel.dy += inverted ? -event.scrollingDeltaY : event.scrollingDeltaY
 
-        let next = Layout.from(dx: dx, dy: dy, threshold: Settings.threshold)
+        let next = Layout(travel: travel)
         guard next != layout else { return }
         layout = next
 
-        if let next, let target = resolve(next) {
-            resolved = target
-            overlay.show(target.frame, from: window.map { Screens.flip($0.frame) })
+        if let next, let target, let resolved = resolve(next, for: target) {
+            snap = resolved
+            overlay.show(resolved.frame, growingFrom: Screens.flip(target.frame))
         } else {
-            resolved = nil
+            snap = nil
             overlay.hide()
         }
     }
 
-    private func resolve(_ l: Layout) -> (layout: Layout, frame: CGRect)? {
-        guard let screen, let window else { return nil }
+    // Swiping toward an edge the window already fills sends it to the next screen over
+    private func resolve(_ layout: Layout, for window: TargetWindow) -> Snap? {
+        guard let screen else { return nil }
         let current = Screens.flip(window.frame)
-
-        // Swiping toward an edge the window already fills sends it to the next monitor
-        if l == .leftHalf || l == .rightHalf,
-           current.isClose(to: l.frame(in: screen.visibleFrame)),
-           let next = Screens.neighbor(of: screen, left: l == .leftHalf) {
-            let flipped: Layout = l == .leftHalf ? .rightHalf : .leftHalf
-            return (flipped, flipped.frame(in: next.visibleFrame))
+        if layout == .leftHalf || layout == .rightHalf,
+            current.isClose(to: layout.frame(in: screen.visibleFrame)),
+            let next = Screens.neighbor(of: screen, toTheLeft: layout == .leftHalf)
+        {
+            let opposite: Layout = layout == .leftHalf ? .rightHalf : .leftHalf
+            return Snap(layout: opposite, frame: opposite.frame(in: next.visibleFrame))
         }
-        return (l, l.frame(in: screen.visibleFrame))
+        return Snap(layout: layout, frame: layout.frame(in: screen.visibleFrame))
     }
 
     private func finish(commit: Bool) {
-        let target = resolved.map { "\($0.layout)" } ?? "none"
-        log.debug("swipe dx \(Double(self.dx)) dy \(Double(self.dy)) to \(target, privacy: .public) commit \(commit)")
-        if commit, let window, let resolved {
-            if resolved.layout == .minimize {
-                WindowManager.minimize(window.element)
+        let result = snap.map { "\($0.layout)" } ?? "none"
+        Logger.gesture.debug(
+            "swipe dx \(Double(self.travel.dx)) dy \(Double(self.travel.dy)) to \(result, privacy: .public) commit \(commit)"
+        )
+        if commit, let target, let snap {
+            if snap.layout == .minimize {
+                WindowManager.minimize(target.element)
             } else {
-                WindowManager.setFrame(window.element, Screens.flip(resolved.frame))
+                WindowManager.setFrame(target.element, to: Screens.flip(snap.frame))
             }
         }
         reset()
-        swallowMomentum = true
+        swallowsMomentum = true
     }
 
     private func reset() {
         overlay.hide()
-        window = nil
+        target = nil
         layout = nil
-        resolved = nil
-        swallowMomentum = false
+        snap = nil
+        swallowsMomentum = false
     }
 }
