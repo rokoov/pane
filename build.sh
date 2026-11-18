@@ -25,8 +25,9 @@ codesign --force --sign "${SIGN_ID:--}" "$APP"
 echo "Built $APP"
 
 if [[ "${1:-}" == "zip" ]]; then
-    ditto -c -k --norsrc --noextattr --keepParent "$APP" build/Pane.zip
-    echo "Packed build/Pane.zip"
+    ZIP="build/Pane-$(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.plist").zip"
+    ditto -c -k --norsrc --noextattr --keepParent "$APP" "$ZIP"
+    echo "Packed $ZIP"
 fi
 
 if [[ "${1:-}" == "run" ]]; then
