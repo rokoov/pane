@@ -16,13 +16,19 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
-      - name: Build Pane.zip
+      - name: Build the zip
         run: ./build.sh zip
         env:
           VERSION: ${{ github.event.release.tag_name }}
       - name: Attach to the release
         if: github.event_name == 'release'
-        run: gh release upload "$TAG" build/Pane.zip --clobber
+        run: |
+          zip="build/Pane-${TAG#v}.zip"
+          gh release upload "$TAG" "$zip" --clobber
+          # The checksum line in the notes is replaced, not repeated, if the release is published again
+          gh release view "$TAG" --json body --jq .body | sed '/^SHA-256 of the zip:/d' > notes.md
+          printf '\nSHA-256 of the zip: `%s`\n' "$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> notes.md
+          gh release edit "$TAG" --notes-file notes.md
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
@@ -31,4 +37,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: Pane
-          path: build/Pane.zip
+          path: build/Pane-*.zip
