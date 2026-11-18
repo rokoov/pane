@@ -62,18 +62,30 @@ final class GestureMonitor {
     private func begin(_ ns: NSEvent, _ event: CGEvent) -> Unmanaged<CGEvent>? {
         // A lost ended event must not leave a stale swipe swallowing normal scrolling
         reset()
-        let point = event.location
         let anywhere = Settings.anywhereWithOption && ns.modifierFlags.contains(.option)
-        guard let bounds = WindowManager.bounds(at: point),
-              anywhere || point.y - bounds.minY <= Settings.titleBarHeight,
-              let win = WindowManager.window(at: point, in: bounds) else { return Unmanaged.passUnretained(event) }
+        guard let win = target(at: event.location, anywhere: anywhere) else { return Unmanaged.passUnretained(event) }
 
         window = win
-        screen = Screens.screen(containing: Screens.flip(point))
+        let frame = Screens.flip(win.frame)
+        screen = Screens.screen(containing: CGPoint(x: frame.midX, y: frame.midY))
         dx = 0
         dy = 0
         update(ns)
         return nil
+    }
+
+    // The active window, when the swipe is on its own title bar or anywhere while holding ⌥
+    private func target(at point: CGPoint, anywhere: Bool) -> TargetWindow? {
+        if anywhere { return WindowManager.activeWindow() }
+        // Plain scrolls are ruled out through the window server alone, before any app is asked
+        guard let under = WindowManager.windowUnder(point),
+              point.y - under.bounds.minY <= Settings.titleBarHeight,
+              let win = WindowManager.activeWindow() else { return nil }
+        guard win.pid == under.pid, win.frame.isClose(to: under.bounds) else {
+            log.debug("title bar of an inactive window")
+            return nil
+        }
+        return win
     }
 
     private func update(_ ns: NSEvent) {

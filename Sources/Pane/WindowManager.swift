@@ -6,6 +6,7 @@ private let log = Logger(subsystem: "com.rokoov.pane", category: "window")
 
 struct TargetWindow {
     let element: AXUIElement
+    let pid: pid_t
     let frame: CGRect
 }
 
@@ -16,25 +17,22 @@ enum WindowManager {
         return el
     }()
 
-    // Topmost window under the cursor, straight from the window server, so plain scrolling never waits on the app
-    static func bounds(at point: CGPoint) -> CGRect? {
+    // Topmost window under the cursor, straight from the window server, so plain scrolling never waits on an app
+    static func windowUnder(_ point: CGPoint) -> (pid: pid_t, bounds: CGRect)? {
         let number = NSWindow.windowNumber(at: Screens.flip(point), belowWindowWithWindowNumber: 0)
         guard number > 0,
               let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, CGWindowID(number)) as? [[String: Any]])?.first,
               info[kCGWindowLayer as String] as? Int == 0,
-              let bounds = info[kCGWindowBounds as String] as? NSDictionary else { return nil }
-        return CGRect(dictionaryRepresentation: bounds as CFDictionary)
+              let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+              let dict = info[kCGWindowBounds as String] as? NSDictionary,
+              let bounds = CGRect(dictionaryRepresentation: dict as CFDictionary) else { return nil }
+        return (pid, bounds)
     }
 
-    static func window(at point: CGPoint, in bounds: CGRect) -> TargetWindow? {
-        // Hit-test the title bar rather than the content, so web views don't build their accessibility tree
-        let probe = CGPoint(x: point.x, y: min(point.y, bounds.minY + 10))
-        var hit: AXUIElement?
-        let error = AXUIElementCopyElementAtPosition(systemWide, Float(probe.x), Float(probe.y), &hit)
-        guard error == .success, let hit, let win = windowElement(from: hit) else {
-            log.debug("no window at title bar, AX error \(error.rawValue)")
-            return nil
-        }
+    // The active app's main window, which is the one a swipe moves
+    static func activeWindow() -> TargetWindow? {
+        guard let app = element(systemWide, kAXFocusedApplicationAttribute),
+              let win = element(app, kAXMainWindowAttribute) ?? element(app, kAXFocusedWindowAttribute) else { return nil }
 
         var pid: pid_t = 0
         AXUIElementGetPid(win, &pid)
@@ -42,11 +40,11 @@ enum WindowManager {
         guard pid != getpid(),
               subrole == kAXStandardWindowSubrole,
               bool(win, "AXFullScreen") != true,
-              let frame = frame(of: win), frame.contains(point) else {
+              let frame = frame(of: win) else {
             log.debug("skipped window of pid \(pid), subrole \(subrole ?? "none", privacy: .public)")
             return nil
         }
-        return TargetWindow(element: win, frame: frame)
+        return TargetWindow(element: win, pid: pid, frame: frame)
     }
 
     // Slow apps take a while to move, which must not stall the event tap or the overlay animation
@@ -76,17 +74,6 @@ enum WindowManager {
 
     static func minimize(_ win: AXUIElement) {
         queue.async { AXUIElementSetAttributeValue(win, kAXMinimizedAttribute as CFString, kCFBooleanTrue) }
-    }
-
-    private static func windowElement(from el: AXUIElement) -> AXUIElement? {
-        var current: AXUIElement? = el
-        for _ in 0..<25 {
-            guard let c = current else { return nil }
-            if string(c, kAXRoleAttribute) == kAXWindowRole { return c }
-            if let w = element(c, kAXWindowAttribute) { return w }
-            current = element(c, kAXParentAttribute)
-        }
-        return nil
     }
 
     private static func frame(of win: AXUIElement) -> CGRect? {
