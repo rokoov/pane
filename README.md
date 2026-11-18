@@ -2,7 +2,7 @@
 
 <img src="Resources/AppIcon-preview.png" width="96" align="right" alt="">
 
-**Window snapping for your trackpad.** Swipe on any title bar to snap, tile and move windows. Free and open source.
+**Window snapping for your trackpad.** Swipe on a window's title bar to snap, tile and move it. Free and open source.
 
 A free, open-source alternative to Swish, written natively in Swift.
 
