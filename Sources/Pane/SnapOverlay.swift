@@ -32,8 +32,11 @@ final class SnapOverlay {
         let target = frame.insetBy(dx: 8, dy: 8)
         if !visible {
             visible = true
-            panel.setFrame(from ?? target.insetBy(dx: target.width * 0.1, dy: target.height * 0.1), display: false)
-            panel.orderFrontRegardless()
+            // Still fading out: carry on from where it is instead of jumping back to the window
+            if !panel.isVisible {
+                panel.setFrame(from ?? target.insetBy(dx: target.width * 0.1, dy: target.height * 0.1), display: false)
+                panel.orderFrontRegardless()
+            }
         }
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2
