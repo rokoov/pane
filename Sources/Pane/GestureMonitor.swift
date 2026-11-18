@@ -57,7 +57,8 @@ final class GestureMonitor {
     }
 
     private func begin(_ ns: NSEvent, _ event: CGEvent) -> Unmanaged<CGEvent>? {
-        swallowMomentum = false
+        // A lost ended event must not leave a stale swipe swallowing normal scrolling
+        reset()
         let point = event.location
         guard let win = WindowManager.window(at: point) else { return Unmanaged.passUnretained(event) }
 
@@ -68,8 +69,6 @@ final class GestureMonitor {
         screen = Screens.screen(containing: Screens.flip(point))
         dx = 0
         dy = 0
-        layout = nil
-        resolved = nil
         update(ns)
         return nil
     }
@@ -115,10 +114,15 @@ final class GestureMonitor {
                 WindowManager.setFrame(window.element, Screens.flip(resolved.frame))
             }
         }
+        reset()
+        swallowMomentum = true
+    }
+
+    private func reset() {
         overlay.hide()
         window = nil
         layout = nil
         resolved = nil
-        swallowMomentum = true
+        swallowMomentum = false
     }
 }
