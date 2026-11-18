@@ -15,5 +15,7 @@ echo "Built $APP"
 
 if [[ "${1:-}" == "run" ]]; then
     pkill -x Pane || true
+    # open only reactivates the old instance if it hasn't exited yet
+    while pgrep -x Pane >/dev/null; do sleep 0.1; done
     open "$APP"
 fi
