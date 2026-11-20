@@ -4,7 +4,7 @@
 
 **Window snapping for your trackpad.** Swipe on a window's title bar to snap, tile and move it. Free and open source.
 
-A free, open-source alternative to Swish, written natively in Swift. **[panee.app](https://panee.app)** has an interactive demo.
+A free, open-source alternative to Swish, written natively in Swift. **[panee.app](https://panee.app)** shows it in action.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/snap-dark.png">
