@@ -4,7 +4,7 @@
 
 **Window snapping for your trackpad.** Swipe on a window's title bar to snap, tile and move it. Free and open source.
 
-A free, open-source alternative to Swish, written natively in Swift. **[pane.rokodev.com](https://pane.rokodev.com)** has an interactive demo.
+A free, open-source alternative to Swish, written natively in Swift. **[panee.app](https://panee.app)** has an interactive demo.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/snap-dark.png">
@@ -36,7 +36,7 @@ A live preview shows where the window will land. Swipe back to cancel.
 
 Requires macOS 13 or later, on Apple silicon or Intel.
 
-1. Download `Pane-<version>.zip` from [pane.rokodev.com](https://pane.rokodev.com) or the [latest release](https://github.com/rokoov/pane/releases/latest), unzip it and move **Pane** to Applications.
+1. Download `Pane-<version>.zip` from [panee.app](https://panee.app) or the [latest release](https://github.com/rokoov/pane/releases/latest), unzip it and move **Pane** to Applications.
 2. Open Pane. It isn't notarized by Apple, so macOS blocks the first launch: open System Settings → Privacy & Security and click **Open Anyway**. If you prefer the terminal: `xattr -dr com.apple.quarantine /Applications/Pane.app`
 3. Grant **Accessibility** access when asked (System Settings → Privacy & Security → Accessibility). Pane needs it to read and move windows.
 

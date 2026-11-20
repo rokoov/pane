@@ -25,8 +25,8 @@
 
 ## Links
 
-- [Website](https://pane.rokodev.com/): what Pane does, with an interactive demo
-- [Download the latest version](https://pane.rokodev.com/download): the zip of the newest release
+- [Website](https://panee.app/): what Pane does, with an interactive demo
+- [Download the latest version](https://panee.app/download): the zip of the newest release
 - [Source code on GitHub](https://github.com/rokoov/pane): code, README, releases and issues
 - [Releases](https://github.com/rokoov/pane/releases)
 - [Developer on X](https://x.com/rokoodev): Roko, @rokoodev

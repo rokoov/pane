@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pane.rokodev.com/sitemap.xml
+Sitemap: https://panee.app/sitemap.xml
