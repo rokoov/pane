@@ -4,6 +4,8 @@ import Testing
 @testable import Pane
 
 struct LayoutTests {
+    static let threshold = Config.Gesture.threshold
+
     static let directions: [(CGVector, Layout)] = [
         (CGVector(dx: -120, dy: 0), .leftHalf),
         (CGVector(dx: 120, dy: 0), .rightHalf),
@@ -17,17 +19,18 @@ struct LayoutTests {
 
     @Test(arguments: directions)
     func picksTheLayoutTheFingersPointAt(travel: CGVector, expected: Layout) {
-        #expect(Layout(travel: travel) == expected)
+        #expect(Layout(travel: travel, threshold: Self.threshold) == expected)
     }
 
     @Test func waitsForTheThreshold() {
-        #expect(Layout(travel: CGVector(dx: Config.Gesture.threshold - 1, dy: 0)) == nil)
-        #expect(Layout(travel: CGVector(dx: Config.Gesture.threshold, dy: 0)) == .rightHalf)
+        #expect(Layout(travel: CGVector(dx: Self.threshold - 1, dy: 0), threshold: Self.threshold) == nil)
+        #expect(Layout(travel: CGVector(dx: Self.threshold, dy: 0), threshold: Self.threshold) == .rightHalf)
+        #expect(Layout(travel: CGVector(dx: 60, dy: 0), threshold: 80) == nil)
     }
 
     @Test func toleratesDriftBeforeGoingDiagonal() {
-        #expect(Layout(travel: CGVector(dx: -200, dy: 60)) == .leftHalf)
-        #expect(Layout(travel: CGVector(dx: -200, dy: 120)) == .topLeft)
+        #expect(Layout(travel: CGVector(dx: -200, dy: 60), threshold: Self.threshold) == .leftHalf)
+        #expect(Layout(travel: CGVector(dx: -200, dy: 120), threshold: Self.threshold) == .topLeft)
     }
 
     @Test func dividesTheVisibleFrameWithoutGaps() {
@@ -37,6 +40,33 @@ struct LayoutTests {
         #expect(Layout.topLeft.frame(in: visible) == CGRect(x: 100, y: 391, width: 501, height: 350))
         #expect(Layout.bottomRight.frame(in: visible) == CGRect(x: 601, y: 40, width: 500, height: 351))
         #expect(Layout.maximize.frame(in: visible) == visible)
+    }
+
+    @Test func thirdsTileTheWidth() {
+        let visible = CGRect(x: 0, y: 93, width: 1710, height: 981)
+        #expect(Layout.leftThird.frame(in: visible) == CGRect(x: 0, y: 93, width: 570, height: 981))
+        #expect(Layout.rightTwoThirds.frame(in: visible) == CGRect(x: 570, y: 93, width: 1140, height: 981))
+        #expect(Layout.leftTwoThirds.frame(in: visible).maxX == Layout.rightThird.frame(in: visible).minX)
+    }
+
+    @Test func swipingTheSameWayStepsThroughWidths() {
+        let visible = CGRect(x: 0, y: 93, width: 1710, height: 981)
+        var frame = Layout.leftHalf.frame(in: visible)
+        var widths: [Layout] = []
+        for _ in 0..<3 {
+            guard let next = Layout.leftHalf.nextWidth(after: frame, in: visible) else { break }
+            widths.append(next)
+            frame = next.frame(in: visible)
+        }
+        #expect(widths == [.leftTwoThirds, .leftThird, .leftHalf])
+        #expect(Layout.rightHalf.nextWidth(after: Layout.rightHalf.frame(in: visible), in: visible) == .rightTwoThirds)
+    }
+
+    @Test func aWindowAwayFromTheEdgeSnapsToTheHalf() {
+        let visible = CGRect(x: 0, y: 93, width: 1710, height: 981)
+        let floating = CGRect(x: 300, y: 200, width: 900, height: 560)
+        #expect(Layout.leftHalf.nextWidth(after: floating, in: visible) == nil)
+        #expect(Layout.maximize.nextWidth(after: visible, in: visible) == nil)
     }
 }
 

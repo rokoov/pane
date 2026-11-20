@@ -44,6 +44,21 @@ final class GestureMonitor {
         return true
     }
 
+    // Lets go of the tap, which goes silent anyway once Accessibility access is taken away
+    func stop() {
+        guard let tap else { return }
+        CGEvent.tapEnable(tap: tap, enable: false)
+        CFMachPortInvalidate(tap)
+        self.tap = nil
+        reset()
+    }
+
+    // macOS switches a tap off after a hiccup, such as a display going away, and only says so with the next event
+    func ensureEnabled() {
+        guard let tap, !CGEvent.tapIsEnabled(tap: tap) else { return }
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
     private func handle(_ type: CGEventType, _ cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
         let pass = Unmanaged.passUnretained(cgEvent)
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
@@ -110,29 +125,33 @@ final class GestureMonitor {
         travel.dx += inverted ? event.scrollingDeltaX : -event.scrollingDeltaX
         travel.dy += inverted ? -event.scrollingDeltaY : event.scrollingDeltaY
 
-        let next = Layout(travel: travel)
+        let next = Layout(travel: travel, threshold: Settings.threshold)
         guard next != layout else { return }
         layout = next
 
         if let next, let target, let resolved = resolve(next, for: target) {
             snap = resolved
-            overlay.show(resolved.frame, growingFrom: Screens.flip(target.frame))
+            if Settings.showsPreview { overlay.show(resolved.frame, growingFrom: Screens.flip(target.frame)) }
+            if Settings.playsHaptics {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+            }
         } else {
             snap = nil
             overlay.hide()
         }
     }
 
-    // Swiping toward an edge the window already fills sends it to the next screen over
+    // Swiping toward an edge the window already hugs sends it to the next screen over, or with no screen there,
+    // steps it through ½, ⅔ and ⅓ of this one
     private func resolve(_ layout: Layout, for window: TargetWindow) -> Snap? {
         guard let screen else { return nil }
         let current = Screens.flip(window.frame)
-        if layout == .leftHalf || layout == .rightHalf,
-            current.isClose(to: layout.frame(in: screen.visibleFrame)),
-            let next = Screens.neighbor(of: screen, toTheLeft: layout == .leftHalf)
-        {
-            let opposite: Layout = layout == .leftHalf ? .rightHalf : .leftHalf
-            return Snap(layout: opposite, frame: opposite.frame(in: next.visibleFrame))
+        if let nextWidth = layout.nextWidth(after: current, in: screen.visibleFrame) {
+            if let neighbor = Screens.neighbor(of: screen, toTheLeft: layout == .leftHalf) {
+                let opposite: Layout = layout == .leftHalf ? .rightHalf : .leftHalf
+                return Snap(layout: opposite, frame: opposite.frame(in: neighbor.visibleFrame))
+            }
+            return Snap(layout: nextWidth, frame: nextWidth.frame(in: screen.visibleFrame))
         }
         return Snap(layout: layout, frame: layout.frame(in: screen.visibleFrame))
     }

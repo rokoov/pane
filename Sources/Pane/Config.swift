@@ -4,8 +4,10 @@ import QuartzCore
 // Tuning values, each with its unit and what raising it does
 enum Config {
     enum Gesture {
-        // Points of finger travel before a swipe picks a layout; higher needs a longer swipe
+        // Points of finger travel before a swipe picks a layout; higher needs a longer swipe. Settings moves it
+        // within the range, from short to long
         static let threshold: CGFloat = 40
+        static let thresholdRange: ClosedRange<Double> = 20...80
         // Points from the top of the active window that count as its title bar
         static let titleBarHeight: CGFloat = 44
         // Shorter axis over longer axis from which a swipe is diagonal; higher makes quarters harder to hit
@@ -37,6 +39,11 @@ enum Config {
         static let moveRetryDelay: TimeInterval = 0.05
     }
 
-    // Seconds between checks while waiting for Accessibility access
-    static let permissionPollInterval: TimeInterval = 1
+    // Seconds between checks that Accessibility access is still granted and the event tap still on
+    static let permissionPollInterval: TimeInterval = 2
+
+    static let repository = URL(string: "https://github.com/rokoov/pane")!
+    static let latestRelease = URL(string: "https://github.com/rokoov/pane/releases/latest")!
+    static let accessibilitySettings = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
 }

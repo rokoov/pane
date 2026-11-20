@@ -1,85 +1,86 @@
 import AppKit
-import ServiceManagement
+import SwiftUI
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let monitor = GestureMonitor()
+    private let state = PaneState()
     private lazy var statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private var permissionTimer: Timer?
+    private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Settings.registerDefaults()
         statusItem.button?.image = NSImage(systemSymbolName: "rectangle.split.2x1", accessibilityDescription: "Pane")
-        rebuildMenu()
+        let menu = NSMenu()
+        menu.delegate = self
+        statusItem.menu = menu
 
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        if AXIsProcessTrustedWithOptions(options) {
-            startMonitor()
-            return
-        }
+        if AXIsProcessTrustedWithOptions(options) { monitor.start() }
+        watchPermission()
+    }
+
+    // Access can come and go at any time (granted later, reset by a macOS update). Without it the tap goes silent,
+    // so Pane lets go of it, shows that it is waiting, and starts again once access is back
+    private func watchPermission() {
         let interval = Config.permissionPollInterval
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
-            guard AXIsProcessTrusted() else { return }
-            timer.invalidate()
-            self?.startMonitor()
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.checkPermission()
         }
     }
 
-    private func startMonitor() {
-        monitor.start()
-        rebuildMenu()
+    private func checkPermission() {
+        let isTrusted = AXIsProcessTrusted()
+        if isTrusted && !monitor.isRunning {
+            monitor.start()
+        } else if !isTrusted && monitor.isRunning {
+            monitor.stop()
+        }
+        monitor.ensureEnabled()
+        if state.hasAccessibility != isTrusted { state.hasAccessibility = isTrusted }
     }
 
-    private func rebuildMenu() {
-        let menu = NSMenu()
+    // Built each time the menu opens, so it always matches the Settings window
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
         if !monitor.isRunning {
             menu.addItem(item("Waiting for Accessibility access…", action: #selector(openAccessibilitySettings)))
             menu.addItem(.separator())
         }
-        let toggles: [(title: String, isOn: Bool, action: Selector)] = [
-            ("Enabled", Settings.isEnabled, #selector(toggleEnabled)),
-            ("Swipe Anywhere While Holding ⌥", Settings.allowsSwipeAnywhere, #selector(toggleAnywhere)),
-            ("Launch at Login", SMAppService.mainApp.status == .enabled, #selector(toggleLaunchAtLogin)),
-        ]
-        for toggle in toggles {
-            menu.addItem(item(toggle.title, isOn: toggle.isOn, action: toggle.action))
-        }
+        let enabled = item("Enabled", action: #selector(toggleEnabled))
+        enabled.state = Settings.isEnabled ? .on : .off
+        menu.addItem(enabled)
+        menu.addItem(.separator())
+        menu.addItem(item("Settings…", action: #selector(openSettings), key: ","))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit Pane", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        statusItem.menu = menu
     }
 
-    private func item(_ title: String, isOn: Bool? = nil, action: Selector) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+    private func item(_ title: String, action: Selector, key: String = "") -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.target = self
-        if let isOn { item.state = isOn ? .on : .off }
         return item
     }
 
     @objc private func toggleEnabled() {
         Settings.isEnabled.toggle()
-        rebuildMenu()
     }
 
-    @objc private func toggleAnywhere() {
-        Settings.allowsSwipeAnywhere.toggle()
-        rebuildMenu()
-    }
-
-    @objc private func toggleLaunchAtLogin() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled {
-                try service.unregister()
-            } else {
-                try service.register()
-            }
-        } catch {
-            NSLog("Pane: launch at login failed: \(error)")
+    @objc private func openSettings() {
+        if settingsWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(state: state)))
+            window.title = "Pane Settings"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
         }
-        rebuildMenu()
+        // Pane has no Dock icon, so it brings itself forward for the window to take focus
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
     @objc private func openAccessibilitySettings() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-        if let url { NSWorkspace.shared.open(url) }
+        NSWorkspace.shared.open(Config.accessibilitySettings)
     }
 }
