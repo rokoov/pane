@@ -81,6 +81,8 @@ p { margin: 0; text-wrap: pretty; }
 
 /* Demo */
 .demo-wrap { padding: 28px 0 40px; }
+.demo-cap { text-align: center; margin: 0 auto 18px; font-size: 15px; color: var(--ink-2); }
+.demo-cap span { color: var(--muted); }
 .demo-hint { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; font-size: 14px; color: var(--ink-2); }
 .demo-hint .chip { display: inline-block; padding: 7px 14px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair); }
 .demo-hint .chip b { font-weight: 600; color: var(--ink); }
@@ -98,16 +100,16 @@ kbd { font: 600 12px/1 var(--font); padding: 3px 6px; border-radius: 5px; backgr
 .menubar .clock { width: 8%; }
 .dock { position: absolute; left: 50%; bottom: 2.2%; translate: -50% 0; height: 9%; display: flex; gap: 1.1%; align-items: center; padding: 0 1.1%; width: 38%; border-radius: 18px; background: oklch(98% 0.01 255 / .5); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px oklch(100% 0 0 / .55); z-index: 4; }
 .dock span { position: relative; flex: 1; aspect-ratio: 1; border-radius: 24%; }
-.dock button { all: unset; position: relative; flex: 1; aspect-ratio: 1; border-radius: 24%; cursor: pointer; background: var(--grad); }
-.dock button::after { content: ""; position: absolute; left: 50%; bottom: -14%; width: 8%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%; background: oklch(30% 0.03 265 / .7); }
-.dock button.min { animation: bounce 1s var(--spring) 1 .3s; }
-.dock button.min::before { content: ""; position: absolute; inset: 22% 18%; border-radius: 3px; background: #fff; opacity: .9; }
+.dock .app { background: var(--grad); }
+.dock .app::after { content: ""; position: absolute; left: 50%; bottom: -14%; width: 8%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%; background: oklch(30% 0.03 265 / .7); }
+.dock .app.min { animation: bounce 1s var(--spring) 1 .3s; }
+.dock .app.min::before { content: ""; position: absolute; inset: 22% 18%; border-radius: 3px; background: #fff; opacity: .9; }
 @keyframes bounce { 40% { transform: translateY(-30%); } }
 
 .win { position: absolute; z-index: 2; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 0 0 .5px oklch(20% 0.03 265 / .25), 0 24px 50px -16px oklch(30% 0.1 270 / .45), 0 6px 14px -6px oklch(30% 0.1 270 / .25);
   transition: left .55s var(--spring), top .55s var(--spring), width .55s var(--spring), height .55s var(--spring), opacity .35s, transform .5s var(--ease); }
 .win.mini { transform: scale(.08); opacity: 0; transform-origin: 50% 100%; }
-.titlebar { position: relative; height: 46px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: oklch(97% 0.004 265); border-bottom: 1px solid oklch(20% 0.02 265 / .08); cursor: default; touch-action: none; }
+.titlebar { position: relative; height: 38px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: oklch(97% 0.004 265); border-bottom: 1px solid oklch(20% 0.02 265 / .08); }
 .titlebar .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
 .titlebar .t { position: absolute; left: 50%; translate: -50% 0; font-size: 12.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .titlebar .zone { position: absolute; right: 10px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); transition: opacity .3s; }
@@ -115,7 +117,10 @@ kbd { font: 600 12px/1 var(--font); padding: 3px 6px; border-radius: 5px; backgr
 .titlebar .fingers i { width: 10px; height: 10px; border-radius: 50%; background: var(--grad); box-shadow: 0 0 0 2px #fff; animation: nudge 2.4s var(--ease) infinite; }
 .titlebar .fingers i + i { animation-delay: .05s; }
 @keyframes nudge { 0%, 30% { transform: translateX(0); opacity: 1; } 60% { transform: translateX(-14px); opacity: 0; } 61% { transform: translateX(8px); opacity: 0; } 85%, 100% { transform: translateX(0); opacity: 1; } }
-.desk.used .titlebar .zone { opacity: 0; }
+.titlebar .touch { position: absolute; left: 62%; top: 50%; display: flex; gap: 6px; translate: -50% -50%; opacity: 0; pointer-events: none; }
+.titlebar .touch i { width: 15px; height: 15px; border-radius: 50%; background: var(--grad); box-shadow: 0 0 0 2.5px #fff, 0 4px 10px -2px oklch(40% 0.2 272 / .6); }
+.titlebar .touch.go { animation: fingers 1s var(--ease) forwards; }
+@keyframes fingers { 0% { opacity: 0; transform: translate(0, 0) scale(.6); } 18% { opacity: 1; transform: translate(0, 0) scale(1); } 75% { opacity: 1; transform: translate(var(--tx), var(--ty)); } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(.8); } }
 @media (max-width: 560px) { .titlebar .zone span { display: none; } }
 .body { flex: 1; display: flex; min-height: 0; }
 .side { width: 28%; max-width: 170px; padding: 14px 12px; background: oklch(97.5% 0.004 265); border-right: 1px solid oklch(20% 0.02 265 / .06); display: grid; gap: 9px; align-content: start; }
@@ -123,7 +128,7 @@ kbd { font: 600 12px/1 var(--font); padding: 3px 6px; border-radius: 5px; backgr
 .main { flex: 1; padding: 18px 18px; display: grid; gap: 11px; align-content: start; overflow: hidden; }
 .main b { display: block; height: 14px; width: 46%; border-radius: 99px; background: oklch(82% 0.02 265); margin-bottom: 4px; }
 
-.preview { position: absolute; z-index: 1; border-radius: 16px; pointer-events: none; opacity: 0;
+.preview { position: absolute; z-index: 3; border-radius: 16px; pointer-events: none; opacity: 0;
   background: oklch(100% 0 0 / .35); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
   box-shadow: inset 0 0 0 1px oklch(100% 0 0 / .7), 0 10px 40px -10px oklch(40% 0.15 270 / .35);
   transition: left .2s var(--ease), top .2s var(--ease), width .2s var(--ease), height .2s var(--ease), opacity .15s; }
@@ -131,14 +136,12 @@ kbd { font: 600 12px/1 var(--font); padding: 3px 6px; border-radius: 5px; backgr
 .preview .lbl { position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 6px 12px; border-radius: 99px; background: oklch(20% 0.03 265 / .72); color: #fff; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
 
 .pad { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-top: 18px; }
-.pad button { all: unset; cursor: pointer; display: grid; place-items: center; gap: 6px; padding: 12px 6px 10px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair); font-size: 12px; color: var(--ink-2); text-align: center; transition: transform .3s var(--spring), box-shadow .2s, background .2s; }
-.pad button:hover { box-shadow: inset 0 0 0 1px var(--hair-2); background: #fff; }
-.pad button:active { transform: scale(.94); }
-.pad button[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--indigo); color: var(--ink); }
+.pad div { cursor: default; transition: box-shadow .3s, background .3s, color .3s; display: grid; place-items: center; gap: 6px; padding: 12px 6px 10px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair); font-size: 12px; color: var(--ink-2); text-align: center; transition: transform .3s var(--spring), box-shadow .2s, background .2s; }
+.pad div.on { box-shadow: inset 0 0 0 1.5px var(--indigo); color: var(--ink); background: #fff; }
 .pad .mini { position: relative; width: 44px; height: 28px; border-radius: 5px; background: oklch(92% 0.025 255); box-shadow: inset 0 0 0 1px var(--hair); overflow: hidden; }
 .pad .mini i { position: absolute; border-radius: 3px; background: var(--grad); }
 .pad .arrow { font-size: 15px; line-height: 1; color: var(--ink); }
-@media (max-width: 760px) { .pad { grid-template-columns: repeat(4, 1fr); } .pad button { font-size: 11px; padding: 10px 4px 8px; } .pad .arrow { display: none; } }
+@media (max-width: 760px) { .pad { grid-template-columns: repeat(4, 1fr); } .pad div { font-size: 11px; padding: 10px 4px 8px; } .pad .arrow { display: none; } }
 
 /* Sections */
 .section { padding: 96px 0; }
@@ -199,7 +202,7 @@ footer .also a { color: var(--indigo); font-weight: 600; }
 <header class="nav" id="nav">
   <div class="wrap">
     <a class="brand" href="/" aria-label="Pane home"><img src="/assets/icon.png" alt="" width="30" height="30">Pane</a>
-    <nav aria-label="Sections"><a href="#try">Try it</a><a href="#features">Features</a><a href="#install">Install</a><a href="#faq">FAQ</a><a href="https://github.com/rokoov/pane">GitHub</a></nav>
+    <nav aria-label="Sections"><a href="#try">See it</a><a href="#features">Features</a><a href="#install">Install</a><a href="#faq">FAQ</a><a href="https://github.com/rokoov/pane">GitHub</a></nav>
     <a class="btn primary" href="/download">Download free</a>
   </div>
 </header>
@@ -218,22 +221,18 @@ footer .also a { color: var(--indigo); font-weight: 600; }
     </div>
   </section>
 
-  <section class="demo-wrap" id="try" aria-label="Try Pane">
+  <section class="demo-wrap" id="try" aria-label="Pane in action">
     <div class="wrap">
-      <div class="demo-hint">
-        <span class="chip mouse"><b>Try it here:</b> two fingers on the title bar, then swipe</span>
-        <span class="chip mouse">Hold <kbd>⌥</kbd> to swipe anywhere</span>
-        <span class="chip touch"><b>Try it here:</b> drag the title bar in any direction</span>
-      </div>
-      <div class="desk" id="desk">
+      <p class="demo-cap">Two fingers on the title bar, a swipe, and the window snaps. <span>No dragging to the edge.</span></p>
+      <div class="desk" id="desk" role="img" aria-label="A window snapping to halves, quarters and the full screen as two fingers swipe on its title bar">
         <div class="menubar" aria-hidden="true"><i class="apple"></i><i style="width:4%"></i><i style="width:3.4%"></i><i style="width:3%"></i><i style="width:4.4%"></i><i class="pane-ic"></i><i class="clock"></i></div>
         <div class="preview" id="preview" aria-hidden="true"><span class="lbl" id="plbl"></span></div>
         <p class="sr-only" id="snapsay" aria-live="polite"></p>
-        <div class="win" id="win" role="group" aria-label="Demo window">
+        <div class="win" id="win" aria-hidden="true">
           <div class="titlebar" id="titlebar">
             <span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
             <span class="t">Notes</span>
-            <span class="zone" aria-hidden="true"><span>two fingers here</span><span class="fingers"><i></i><i></i></span></span>
+            <span class="touch" id="touch" aria-hidden="true"><i></i><i></i></span>
           </div>
           <div class="body" aria-hidden="true">
             <div class="side"><i style="width:80%"></i><i style="width:62%"></i><i style="width:74%"></i><i style="width:55%"></i><i style="width:68%"></i></div>
@@ -244,12 +243,12 @@ footer .also a { color: var(--indigo); font-weight: 600; }
           <span style="background:linear-gradient(oklch(72% 0.15 240),oklch(58% 0.19 255))"></span>
           <span style="background:linear-gradient(oklch(78% 0.17 150),oklch(62% 0.18 150))"></span>
           <span style="background:linear-gradient(oklch(82% 0.16 75),oklch(70% 0.18 55))"></span>
-          <button type="button" id="dockapp" aria-label="Notes, click to bring the window back"></button>
+          <span class="app" id="dockapp"></span>
           <span style="background:linear-gradient(oklch(70% 0.2 15),oklch(58% 0.22 10))"></span>
           <span style="background:linear-gradient(oklch(68% 0.18 300),oklch(55% 0.2 295))"></span>
         </div>
       </div>
-      <div class="pad" id="pad" aria-label="Or pick a gesture"></div>
+      <div class="pad" id="pad" aria-label="The eight gestures"></div>
     </div>
   </section>
 
@@ -336,16 +335,16 @@ fetch("https://api.github.com/repos/rokoov/pane/releases/latest").then(r => r.ok
   if (rel && rel.tag_name) document.querySelectorAll(".js-version").forEach(el => el.textContent = "Version " + rel.tag_name.replace(/^v/, ""));
 }).catch(() => {});
 
-/* The demo: the same rules as the app. Finger travel picks a layout once it passes the threshold,
-   a diagonal needs the shorter axis at half the longer one, and the preview shows the result first. */
+/* The demo plays the gestures in a loop: fingers swipe on the title bar, the preview grows out of the window, the window snaps. */
 (() => {
-  const desk = document.getElementById("desk"), win = document.getElementById("win"), bar = document.getElementById("titlebar");
+  const desk = document.getElementById("desk"), win = document.getElementById("win"), touch = document.getElementById("touch");
   const preview = document.getElementById("preview"), plbl = document.getElementById("plbl"), dockApp = document.getElementById("dockapp");
   const pad = document.getElementById("pad");
   // Work area in percent of the desk, like the screen's visible frame: below the menu bar, above the Dock
   const A = { x: 1.2, y: 6.2, w: 97.6, h: 79.6 };
   const FLOAT = { x: 24, y: 17, w: 52, h: 56 };
   const NAMES = { left: "Left half", right: "Right half", max: "Fill", min: "Minimize", tl: "Top left", tr: "Top right", bl: "Bottom left", br: "Bottom right" };
+  const DIR = { left: [-1, 0], right: [1, 0], max: [0, -1], min: [0, 1], tl: [-1, -1], tr: [1, -1], bl: [-1, 1], br: [1, 1] };
   const frameOf = l => {
     const hw = A.w / 2, hh = A.h / 2;
     switch (l) {
@@ -357,82 +356,57 @@ fetch("https://api.github.com/repos/rokoov/pane/releases/latest").then(r => r.ok
       case "tr": return { x: A.x + hw, y: A.y, w: hw, h: hh };
       case "bl": return { x: A.x, y: A.y + hh, w: hw, h: hh };
       case "br": return { x: A.x + hw, y: A.y + hh, w: hw, h: hh };
+      default: return { ...FLOAT };
     }
   };
   const place = (el, f, inset = 0) => {
     el.style.left = `calc(${f.x}% + ${inset}px)`; el.style.top = `calc(${f.y}% + ${inset}px)`;
     el.style.width = `calc(${f.w}% - ${inset * 2}px)`; el.style.height = `calc(${f.h}% - ${inset * 2}px)`;
   };
-  let current = { ...FLOAT }, layout = null, minimized = false;
+  let current = { ...FLOAT };
   place(win, current);
 
-  const layoutFor = (dx, dy, threshold) => {
-    const h = Math.abs(dx), v = Math.abs(dy);
-    if (Math.max(h, v) < threshold) return null;
-    if (Math.min(h, v) >= Math.max(h, v) * 0.5) return dy > 0 ? (dx > 0 ? "tr" : "tl") : (dx > 0 ? "br" : "bl");
-    return h > v ? (dx > 0 ? "right" : "left") : (dy > 0 ? "max" : "min");
-  };
-  const show = l => {
-    if (!l) { preview.classList.remove("on"); return; }
-    if (!preview.classList.contains("on")) { preview.style.transition = "none"; place(preview, current); void preview.offsetWidth; preview.style.transition = ""; }
-    place(preview, frameOf(l), 6); plbl.textContent = NAMES[l]; preview.classList.add("on");
-  };
-  const commit = l => {
-    preview.classList.remove("on");
-    desk.classList.add("used");
-    pad.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.l === l)));
-    if (!l) return;
-    document.getElementById("snapsay").textContent = `Window: ${NAMES[l]}`;
-    if (l === "min") { minimized = true; win.classList.add("mini"); dockApp.classList.remove("min"); void dockApp.offsetWidth; dockApp.classList.add("min"); return; }
-    current = frameOf(l); place(win, current);
-  };
-  const restore = () => { if (!minimized) return; minimized = false; win.classList.remove("mini"); dockApp.classList.remove("min"); };
-  dockApp.addEventListener("click", restore);
-
-  // Trackpad: wheel events over the title bar, or anywhere on the desk while holding Option
-  let travel = { dx: 0, dy: 0 }, tracking = false, endTimer = 0, quietUntil = 0;
-  // Listened to on the document, first in line, so nothing on the page can swallow the swipe
-  document.addEventListener("wheel", e => {
-    if (e.ctrlKey || minimized || !desk.contains(e.target)) return;   // ctrl + wheel is a pinch
-    const onBar = bar.contains(e.target);
-    if (!onBar && !e.altKey) return;
-    e.preventDefault();
-    const now = performance.now();
-    if (!tracking && now < quietUntil) { quietUntil = now + 120; return; }  // the momentum of the last swipe
-    tracking = true;
-    const k = e.deltaMode === 1 ? 16 : 1;
-    travel.dx += -e.deltaX * k; travel.dy += e.deltaY * k;   // finger travel with natural scrolling, positive right and up
-    const next = layoutFor(travel.dx, travel.dy, 36);
-    if (next !== layout) { layout = next; show(next); }
-    clearTimeout(endTimer);
-    endTimer = setTimeout(() => { commit(layout); tracking = false; layout = null; travel = { dx: 0, dy: 0 }; quietUntil = performance.now() + 450; }, 140);
-  }, { passive: false, capture: true });
-
-  // Touch screens have no two-finger swipe, so there the title bar is dragged instead
-  let start = null;
-  bar.addEventListener("pointerdown", e => { if (minimized || e.pointerType === "mouse") return; start = { x: e.clientX, y: e.clientY }; bar.setPointerCapture(e.pointerId); });
-  bar.addEventListener("pointermove", e => {
-    if (!start) return;
-    const next = layoutFor(e.clientX - start.x, start.y - e.clientY, 36);
-    if (next !== layout) { layout = next; show(next); }
-  });
-  const end = () => { if (!start) return; start = null; commit(layout); layout = null; };
-  bar.addEventListener("pointerup", end); bar.addEventListener("pointercancel", () => { start = null; layout = null; show(null); });
-
-  // The gesture pad
   const MINI = { left: [0, 0, 50, 100], right: [50, 0, 50, 100], max: [0, 0, 100, 100], min: [36, 74, 28, 26], tl: [0, 0, 50, 50], tr: [50, 0, 50, 50], bl: [0, 50, 50, 50], br: [50, 50, 50, 50] };
   const ARROWS = { left: "←", right: "→", max: "↑", min: "↓", tl: "↖", tr: "↗", bl: "↙", br: "↘" };
   pad.innerHTML = Object.keys(NAMES).map(l => {
     const [x, y, w, h] = MINI[l];
-    return `<button type="button" data-l="${l}" aria-pressed="false" aria-label="Swipe ${ARROWS[l]}: ${NAMES[l]}"><span class="mini"><i style="left:${x}%;top:${y}%;width:${w}%;height:${h}%"></i></span><span><span class="arrow">${ARROWS[l]}</span> ${NAMES[l]}</span></button>`;
+    return `<div data-l="${l}"><span class="mini" aria-hidden="true"><i style="left:${x}%;top:${y}%;width:${w}%;height:${h}%"></i></span><span><span class="arrow" aria-hidden="true">${ARROWS[l]}</span> Swipe ${ARROWS[l]}: ${NAMES[l]}</span></div>`;
   }).join("");
-  pad.addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b) return;
-    restore();
-    const l = b.dataset.l;
-    show(l);
-    setTimeout(() => commit(l), reduce ? 0 : 380);
-  });
+  pad.querySelectorAll("div").forEach(d => { const t = d.lastElementChild; t.innerHTML = `<span class="arrow" aria-hidden="true">${ARROWS[d.dataset.l]}</span> ${NAMES[d.dataset.l]}`; });
+  const mark = l => pad.querySelectorAll("div").forEach(d => d.classList.toggle("on", d.dataset.l === l));
+
+  if (reduce) { current = frameOf("left"); place(win, current); mark("left"); return; }
+
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const swipe = async l => {
+    mark(l);
+    const [dx, dy] = DIR[l];
+    touch.style.setProperty("--tx", `${dx * 46}px`); touch.style.setProperty("--ty", `${dy * 26}px`);
+    touch.classList.remove("go"); void touch.offsetWidth; touch.classList.add("go");
+    await wait(380);
+    preview.style.transition = "none"; place(preview, current); void preview.offsetWidth; preview.style.transition = "";
+    place(preview, frameOf(l), 6); plbl.textContent = NAMES[l]; preview.classList.add("on");
+    await wait(700);
+    preview.classList.remove("on");
+    if (l === "min") {
+      win.classList.add("mini"); dockApp.classList.remove("min"); void dockApp.offsetWidth; dockApp.classList.add("min");
+      await wait(1500);
+      win.classList.remove("mini"); dockApp.classList.remove("min");
+      current = { ...FLOAT }; place(win, current);
+    } else {
+      current = frameOf(l); place(win, current);
+    }
+    await wait(1300);
+  };
+  const ORDER = ["left", "right", "max", "tl", "tr", "bl", "br", "min"];
+  let visible = false, running = false;
+  const loop = async () => {
+    if (running) return; running = true;
+    let i = 0;
+    while (visible) { await swipe(ORDER[i % ORDER.length]); i++; }
+    running = false;
+  };
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) loop(); }, { threshold: .35 }).observe(desk);
 })();
 </script>
 </body>
