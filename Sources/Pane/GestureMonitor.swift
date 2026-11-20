@@ -23,6 +23,7 @@ final class GestureMonitor {
     @discardableResult
     func start() -> Bool {
         guard tap == nil else { return true }
+        WindowManager.capMessagingTimeout()
         let callback: CGEventTapCallBack = { _, type, event, monitor in
             guard let monitor else { return Unmanaged.passUnretained(event) }
             return Unmanaged<GestureMonitor>.fromOpaque(monitor).takeUnretainedValue().handle(type, event)
@@ -87,10 +88,15 @@ final class GestureMonitor {
     private func activeWindow(at point: CGPoint, anywhere: Bool) -> TargetWindow? {
         if anywhere { return WindowManager.activeWindow() }
         // Plain scrolls are ruled out through the window server alone, before any app is asked
-        guard let under = WindowManager.windowUnder(point),
-            point.y - under.bounds.minY <= Config.Gesture.titleBarHeight,
-            let window = WindowManager.activeWindow()
-        else { return nil }
+        guard let under = WindowManager.windowUnder(point) else {
+            Logger.gesture.debug("scroll at \(Double(point.x)), \(Double(point.y)) is over no app window")
+            return nil
+        }
+        guard point.y - under.bounds.minY <= Config.Gesture.titleBarHeight else { return nil }
+        guard let window = WindowManager.activeWindow() else {
+            Logger.gesture.debug("title bar swipe, but no active window to move")
+            return nil
+        }
         guard window.pid == under.pid, window.frame.isClose(to: under.bounds) else {
             Logger.gesture.debug("title bar of an inactive window")
             return nil

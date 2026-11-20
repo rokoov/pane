@@ -15,11 +15,9 @@ enum WindowManager {
     }
 
     // Every accessibility call is capped, so a hung app can't stall scrolling for long
-    private static let systemWide: AXUIElement = {
-        let element = AXUIElementCreateSystemWide()
-        AXUIElementSetMessagingTimeout(element, Config.Windows.messagingTimeout)
-        return element
-    }()
+    static func capMessagingTimeout() {
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), Config.Windows.messagingTimeout)
+    }
 
     // Slow apps take a while to move, which must not stall the event tap or the preview animation
     private static let queue = DispatchQueue(label: "com.rokoov.pane.windows", qos: .userInteractive)
@@ -38,11 +36,15 @@ enum WindowManager {
         return (pid, frame)
     }
 
-    // The active app's main window, which is the one a swipe moves
+    // The frontmost app's main window, which is the one a swipe moves. The frontmost app comes from NSWorkspace:
+    // accessibility's system-wide focus query returns nothing while some apps are in front
     static func activeWindow() -> TargetWindow? {
-        guard let app = systemWide.element(kAXFocusedApplicationAttribute),
-            let window = app.element(kAXMainWindowAttribute) ?? app.element(kAXFocusedWindowAttribute)
-        else { return nil }
+        guard let frontmost = NSWorkspace.shared.frontmostApplication else { return nil }
+        let app = AXUIElementCreateApplication(frontmost.processIdentifier)
+        guard let window = app.element(kAXMainWindowAttribute) ?? app.element(kAXFocusedWindowAttribute) else {
+            Logger.window.debug("no main window in \(frontmost.bundleIdentifier ?? "?", privacy: .public)")
+            return nil
+        }
 
         let pid = window.pid
         let subrole = window.string(kAXSubroleAttribute)
