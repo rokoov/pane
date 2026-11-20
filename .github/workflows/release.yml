@@ -9,25 +9,28 @@ permissions:
   contents: write
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
 
 jobs:
   package:
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v7
-      - name: Build the zip
-        run: ./build.sh zip
+      - name: Build the zip and the disk image
+        run: ./build.sh zip dmg
         env:
           VERSION: ${{ github.event.release.tag_name }}
       - name: Attach to the release
         if: github.event_name == 'release'
         run: |
-          zip="build/Pane-${TAG#v}.zip"
-          gh release upload "$TAG" "$zip" --clobber
-          # The checksum line in the notes is replaced, not repeated, if the release is published again
-          gh release view "$TAG" --json body --jq .body | sed '/^SHA-256 of the zip:/d' > notes.md
-          printf '\nSHA-256 of the zip: `%s`\n' "$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> notes.md
+          files=("build/Pane-${TAG#v}.dmg" "build/Pane-${TAG#v}.zip")
+          gh release upload "$TAG" "${files[@]}" --clobber
+          # The checksum lines in the notes are replaced, not repeated, if the release is published again
+          gh release view "$TAG" --json body --jq .body | sed '/^SHA-256 of /d' > notes.md
+          echo >> notes.md
+          for file in "${files[@]}"; do
+            printf 'SHA-256 of %s: `%s`\n' "$(basename "$file")" "$(shasum -a 256 "$file" | cut -d ' ' -f 1)" >> notes.md
+          done
           gh release edit "$TAG" --notes-file notes.md
         env:
           GH_TOKEN: ${{ github.token }}
@@ -37,4 +40,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: Pane
-          path: build/Pane-*.zip
+          path: |
+            build/Pane-*.dmg
+            build/Pane-*.zip
