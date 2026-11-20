@@ -190,6 +190,7 @@ footer a:hover { color: var(--ink); }
 footer .also { color: var(--ink-2); }
 footer .also a { color: var(--indigo); font-weight: 600; }
 
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
@@ -228,6 +229,7 @@ footer .also a { color: var(--indigo); font-weight: 600; }
       <div class="desk" id="desk">
         <div class="menubar" aria-hidden="true"><i class="apple"></i><i style="width:4%"></i><i style="width:3.4%"></i><i style="width:3%"></i><i style="width:4.4%"></i><i class="pane-ic"></i><i class="clock"></i></div>
         <div class="preview" id="preview" aria-hidden="true"><span class="lbl" id="plbl"></span></div>
+        <p class="sr-only" id="snapsay" aria-live="polite"></p>
         <div class="win" id="win" role="group" aria-label="Demo window">
           <div class="titlebar" id="titlebar">
             <span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
@@ -381,6 +383,7 @@ fetch("https://api.github.com/repos/rokoov/pane/releases/latest").then(r => r.ok
     desk.classList.add("used");
     pad.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.l === l)));
     if (!l) return;
+    document.getElementById("snapsay").textContent = `Window: ${NAMES[l]}`;
     if (l === "min") { minimized = true; win.classList.add("mini"); dockApp.classList.remove("min"); void dockApp.offsetWidth; dockApp.classList.add("min"); return; }
     current = frameOf(l); place(win, current);
   };
