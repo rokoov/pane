@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in Pane doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you swiped, on which app's window, and what Pane did instead.
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: App whose window it was
+      placeholder: e.g. Safari, Chrome, Finder, VS Code
+  - type: input
+    id: pane
+    attributes:
+      label: Pane version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.5
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Displays and trackpad
+      description: Built-in or Magic Trackpad, how many monitors, and whether natural scrolling is on.
