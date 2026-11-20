@@ -40,7 +40,7 @@
   --spring: cubic-bezier(.34, 1.4, .64, 1);
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overscroll-behavior-x: none; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
@@ -88,7 +88,7 @@ p { margin: 0; text-wrap: pretty; }
 @media (hover: none) { .demo-hint .mouse { display: none; } .demo-hint .touch { display: inline-flex; } }
 kbd { font: 600 12px/1 var(--font); padding: 3px 6px; border-radius: 5px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair-2), 0 1px 0 var(--hair-2); color: var(--ink); }
 
-.desk { position: relative; aspect-ratio: 16 / 10; width: 100%; border-radius: 22px; overflow: hidden; isolation: isolate; user-select: none; -webkit-user-select: none;
+.desk { overscroll-behavior: contain; position: relative; aspect-ratio: 16 / 10; width: 100%; border-radius: 22px; overflow: hidden; isolation: isolate; user-select: none; -webkit-user-select: none;
   background: radial-gradient(120% 90% at 85% 10%, oklch(84% 0.09 250), transparent 60%), radial-gradient(90% 80% at 10% 100%, oklch(80% 0.1 280), transparent 60%), linear-gradient(in oklch 160deg, oklch(91% 0.04 240), oklch(84% 0.07 270));
   box-shadow: 0 0 0 1px var(--hair-2), 0 40px 80px -40px oklch(40% 0.12 270 / .5), 0 18px 40px -24px oklch(40% 0.1 270 / .35); }
 .menubar { position: absolute; inset: 0 0 auto; height: 5%; display: flex; align-items: center; gap: 2.2%; padding: 0 2%; background: oklch(98% 0.01 255 / .55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 4; }
@@ -107,8 +107,7 @@ kbd { font: 600 12px/1 var(--font); padding: 3px 6px; border-radius: 5px; backgr
 .win { position: absolute; z-index: 2; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 0 0 .5px oklch(20% 0.03 265 / .25), 0 24px 50px -16px oklch(30% 0.1 270 / .45), 0 6px 14px -6px oklch(30% 0.1 270 / .25);
   transition: left .55s var(--spring), top .55s var(--spring), width .55s var(--spring), height .55s var(--spring), opacity .35s, transform .5s var(--ease); }
 .win.mini { transform: scale(.08); opacity: 0; transform-origin: 50% 100%; }
-.titlebar { position: relative; height: 34px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: oklch(97% 0.004 265); border-bottom: 1px solid oklch(20% 0.02 265 / .08); cursor: grab; touch-action: none; }
-.titlebar:active { cursor: grabbing; }
+.titlebar { position: relative; height: 46px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: oklch(97% 0.004 265); border-bottom: 1px solid oklch(20% 0.02 265 / .08); cursor: default; touch-action: none; }
 .titlebar .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
 .titlebar .t { position: absolute; left: 50%; translate: -50% 0; font-size: 12.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .titlebar .zone { position: absolute; right: 10px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); transition: opacity .3s; }
@@ -234,7 +233,7 @@ footer .also a { color: var(--indigo); font-weight: 600; }
           <div class="titlebar" id="titlebar">
             <span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
             <span class="t">Notes</span>
-            <span class="zone" aria-hidden="true"><span>swipe here</span><span class="fingers"><i></i><i></i></span></span>
+            <span class="zone" aria-hidden="true"><span>two fingers here</span><span class="fingers"><i></i><i></i></span></span>
           </div>
           <div class="body" aria-hidden="true">
             <div class="side"><i style="width:80%"></i><i style="width:62%"></i><i style="width:74%"></i><i style="width:55%"></i><i style="width:68%"></i></div>
@@ -392,24 +391,26 @@ fetch("https://api.github.com/repos/rokoov/pane/releases/latest").then(r => r.ok
 
   // Trackpad: wheel events over the title bar, or anywhere on the desk while holding Option
   let travel = { dx: 0, dy: 0 }, tracking = false, endTimer = 0, quietUntil = 0;
-  desk.addEventListener("wheel", e => {
+  // Listened to on the document, first in line, so nothing on the page can swallow the swipe
+  document.addEventListener("wheel", e => {
+    if (e.ctrlKey || minimized || !desk.contains(e.target)) return;   // ctrl + wheel is a pinch
     const onBar = bar.contains(e.target);
-    if (!(onBar || (e.altKey && !minimized)) || minimized) return;
+    if (!onBar && !e.altKey) return;
     e.preventDefault();
     const now = performance.now();
     if (!tracking && now < quietUntil) { quietUntil = now + 120; return; }  // the momentum of the last swipe
     tracking = true;
     const k = e.deltaMode === 1 ? 16 : 1;
     travel.dx += -e.deltaX * k; travel.dy += e.deltaY * k;   // finger travel with natural scrolling, positive right and up
-    const next = layoutFor(travel.dx, travel.dy, 50);
+    const next = layoutFor(travel.dx, travel.dy, 36);
     if (next !== layout) { layout = next; show(next); }
     clearTimeout(endTimer);
-    endTimer = setTimeout(() => { commit(layout); tracking = false; layout = null; travel = { dx: 0, dy: 0 }; quietUntil = performance.now() + 450; }, 160);
-  }, { passive: false });
+    endTimer = setTimeout(() => { commit(layout); tracking = false; layout = null; travel = { dx: 0, dy: 0 }; quietUntil = performance.now() + 450; }, 140);
+  }, { passive: false, capture: true });
 
-  // Touch and mouse: drag the title bar
+  // Touch screens have no two-finger swipe, so there the title bar is dragged instead
   let start = null;
-  bar.addEventListener("pointerdown", e => { if (minimized) return; start = { x: e.clientX, y: e.clientY }; bar.setPointerCapture(e.pointerId); });
+  bar.addEventListener("pointerdown", e => { if (minimized || e.pointerType === "mouse") return; start = { x: e.clientX, y: e.clientY }; bar.setPointerCapture(e.pointerId); });
   bar.addEventListener("pointermove", e => {
     if (!start) return;
     const next = layoutFor(e.clientX - start.x, start.y - e.clientY, 36);
