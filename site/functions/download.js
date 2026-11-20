@@ -4,7 +4,7 @@
 // release page if GitHub does not answer or the release has neither yet.
 const REPO = "rokoov/pane";
 
-export async function onRequest() {
+export async function onRequest({ request }) {
   let target = `https://github.com/${REPO}/releases/latest`;
   try {
     const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
@@ -18,6 +18,10 @@ export async function onRequest() {
       if (file) target = file.browser_download_url;
     }
   } catch {}
+  // ?where shows the target instead of redirecting, for checking the setup
+  if (new URL(request.url).searchParams.has("where")) {
+    return new Response(target + "\n", { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+  }
   return new Response(null, {
     status: 302,
     headers: { Location: target, "Cache-Control": "public, max-age=300" },

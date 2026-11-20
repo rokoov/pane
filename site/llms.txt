@@ -1,22 +1,24 @@
 # Pane
 
-> Pane is a free, open source macOS menu bar app for window snapping with the trackpad. Swipe two fingers on the active window's title bar to snap it to a half, a quarter or the full screen. It runs on macOS 13 Ventura or later, on Apple silicon and Intel Macs.
+> Pane (current version 1.0.0) is a free, open source macOS menu bar app for window snapping with the trackpad. Swipe two fingers on the active window's title bar to snap it to a half, a quarter or the full screen. It runs on macOS 13 Ventura or later, on Apple silicon and Intel Macs.
 
 ## Gestures
 
 - Swipe left or right on the title bar: left or right half of the screen.
 - Swipe up: fill the screen. Swipe down: minimize.
 - Swipe diagonally: one of the four quarters.
-- Swipe toward an edge the window already fills: move it to the next monitor.
+- Swipe toward an edge the window already fills: move it to the next monitor. On a single screen, the same swipe again goes from a half to two thirds to one third.
+- A light haptic click in the trackpad when the preview jumps to a new layout (can be turned off).
+- A Settings window: swipe length, preview, haptics, the Option mode, launch at login and the Accessibility status.
 - Hold Option to swipe anywhere on screen; it always moves the active window.
 - A blurred preview shows where the window will land; swipe back to cancel. Scrolling everywhere else is left alone.
 
 ## Is it safe?
 
-- Open source under the MIT License, about half a megabyte, written natively in Swift.
+- Open source under the MIT License, written natively in Swift.
 - No network access, no analytics, no account.
 - It needs the Accessibility permission, which macOS requires for any app that reads and moves other apps' windows.
-- Releases are built by GitHub Actions from the tagged source, and each release lists the SHA-256 of its zip.
+- Distributed as a DMG (and a zip). Each release lists SHA-256 checksums.
 - Not notarized by Apple yet: on first launch, open it once, then System Settings > Privacy & Security > Open Anyway.
 
 ## Price
@@ -26,7 +28,7 @@
 ## Links
 
 - [Website](https://panee.app/): what Pane does, with an interactive demo
-- [Download the latest version](https://panee.app/download): the zip of the newest release
+- [Download the latest version](https://panee.app/download): the DMG of the newest release
 - [Source code on GitHub](https://github.com/rokoov/pane): code, README, releases and issues
 - [Releases](https://github.com/rokoov/pane/releases)
 - [Developer on X](https://x.com/rokoodev): Roko, @rokoodev
