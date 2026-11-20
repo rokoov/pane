@@ -18,6 +18,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         if AXIsProcessTrustedWithOptions(options) { monitor.start() }
         watchPermission()
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(accessibilityChanged),
+            name: Notification.Name("com.apple.accessibility.api"),
+            object: nil
+        )
+    }
+
+    // Posted whenever any app's Accessibility access changes. A tap made before access was switched off and on
+    // again stays silent while still looking enabled, so Pane always starts a fresh one; TCC settles a moment later
+    @objc private func accessibilityChanged() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            self.monitor.stop()
+            self.checkPermission()
+        }
     }
 
     // Access can come and go at any time (granted later, reset by a macOS update). Without it the tap goes silent,
