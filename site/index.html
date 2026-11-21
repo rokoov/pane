@@ -268,7 +268,7 @@ footer .also a { color: var(--indigo); font-weight: 600; }
         <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15 4v16" stroke-dasharray="2 2.5"/></svg></div><h3>Halves, then thirds</h3><p>On a single screen, swipe toward the same edge again and the window goes from a half to two thirds to one third.</p></div>
         <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div><h3>Feel the snap</h3><p>A light click in the trackpad each time the preview jumps to a new layout. Turn it off in Settings if you prefer.</p></div>
         <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></div><h3>Settings that matter</h3><p>Swipe length, the preview, haptics, the ⌥ mode and launch at login, plus a clear view of the Accessibility permission.</p></div>
-        <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><h3>Private and native</h3><p>No network access, no analytics, no account. A small native Swift app, open source under MIT.</p></div>
+        <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><h3>Private and native</h3><p>No analytics, no account, no tracking. A small native Swift app, open source under MIT.</p></div>
       </div>
     </div>
   </section>
@@ -293,7 +293,7 @@ footer .also a { color: var(--indigo); font-weight: 600; }
       <div class="head reveal"><span class="eyebrow">FAQ</span><h2>Questions before you install.</h2></div>
       <div class="faq">
         <details><summary>Is Pane free?</summary><p>Yes, completely. The code is MIT licensed on GitHub, and there is nothing to buy.</p></details>
-        <details><summary>Is it safe?</summary><p>The whole app is open source, so anyone can read what it does. It makes no network connections, has no analytics and no account. Each release lists the SHA-256 checksums of its downloads, so you can check what you got.</p></details>
+        <details><summary>Is it safe?</summary><p>The whole app is open source, so anyone can read what it does. It has no analytics and no account, and the only network request it ever makes is when you click Check for updates, which asks GitHub for the newest version number. Each release lists the SHA-256 checksums of its downloads, so you can check what you got.</p></details>
         <details><summary>Why does it need Accessibility access?</summary><p>macOS only lets apps read and move other apps' windows through Accessibility. Pane uses it to find the active window and set its size and position. It listens to scroll gestures to spot a swipe and leaves every other scroll alone.</p></details>
         <details><summary>Which window does a swipe move?</summary><p>Always the active window, the one you're working in. Swipe on its title bar, or hold ⌥ to swipe anywhere on screen.</p></details>
         <details><summary>Does it work with a mouse?</summary><p>Pane is made for two-finger swipes on a trackpad. A regular scroll wheel doesn't send swipes, so it won't trigger anything.</p></details>
@@ -334,6 +334,22 @@ addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 8), 
 /* Reveal on scroll */
 const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
 document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+/* Tell /download where the visitor came from (x, reddit, an article...), so it can count downloads per source.
+   Only the site's name is sent, never the full address. */
+(() => {
+  const q = new URLSearchParams(location.search);
+  let from = q.get("utm_source") || q.get("ref") || "";
+  if (!from && document.referrer) {
+    try { const h = new URL(document.referrer).hostname.replace(/^www\./, ""); if (h !== location.hostname) from = h; } catch {}
+  }
+  const map = [[/^(t\.co|x\.com|twitter\.com)$/, "x"], [/reddit\.com$/, "reddit"], [/producthunt/, "producthunt"],
+    [/^google\./, "google"], [/github/, "github"], [/macpip/, "macpip"], [/ycombinator/, "hackernews"],
+    [/bing\./, "bing"], [/duckduckgo/, "duckduckgo"], [/chatgpt|openai/, "chatgpt"], [/perplexity/, "perplexity"], [/smorza\.app/, "smorza"]];
+  from = from.toLowerCase();
+  for (const [re, name] of map) if (re.test(from)) { from = name; break; }
+  from = from.replace(/[^a-z0-9.-]/g, "").slice(0, 40);
+  if (from) document.querySelectorAll('a[href="/download"]').forEach(a => a.href = "/download?from=" + encodeURIComponent(from));
+})();
 /* Newest version number */
 fetch("https://api.github.com/repos/rokoov/pane/releases/latest").then(r => r.ok ? r.json() : null).then(rel => {
   if (rel && rel.tag_name) document.querySelectorAll(".js-version").forEach(el => el.textContent = "Version " + rel.tag_name.replace(/^v/, ""));

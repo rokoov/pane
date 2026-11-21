@@ -16,7 +16,7 @@
 ## Is it safe?
 
 - Open source under the MIT License, written natively in Swift.
-- No network access, no analytics, no account.
+- No analytics, no account. The only network request is a version check when the user clicks Check for updates.
 - It needs the Accessibility permission, which macOS requires for any app that reads and moves other apps' windows.
 - Distributed as a DMG (and a zip). Each release lists SHA-256 checksums.
 - Not notarized by Apple yet: on first launch, open it once, then System Settings > Privacy & Security > Open Anyway.
