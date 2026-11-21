@@ -44,6 +44,9 @@ enum Config {
 
     static let repository = URL(string: "https://github.com/rokoov/pane")!
     static let latestRelease = URL(string: "https://github.com/rokoov/pane/releases/latest")!
+    // Check for updates reads the newest version number here; Download goes through the website so it is counted
+    static let latestReleaseAPI = URL(string: "https://api.github.com/repos/rokoov/pane/releases/latest")!
+    static let updateDownload = URL(string: "https://panee.app/download?from=update")!
     static let accessibilitySettings = URL(
         string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
 }

@@ -51,7 +51,7 @@ struct SettingsView: View {
             Section {
                 LabeledContent("Version", value: version)
                 Link("Pane on GitHub", destination: Config.repository)
-                Link("Check for updates", destination: Config.latestRelease)
+                Button("Check for updates…") { UpdateChecker.check() }
             }
         }
         .formStyle(.grouped)

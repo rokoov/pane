@@ -60,7 +60,7 @@ Run the tests with `swift test` (needs Xcode) and check formatting with `swift f
 
 ## Privacy
 
-No network access, no analytics, no accounts. Pane only listens to scroll gestures and moves windows.
+No analytics, no accounts. Pane only listens to scroll gestures and moves windows. The one network request it makes is when you click Check for updates: it asks GitHub for the newest version number.
 
 ## Website
 
